@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IRON LOG</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root {
+  --bg:#0d0d0f;--bg2:#141416;--bg3:#1a1a1e;
+  --border:#2a2a2e;--border2:#333338;
+  --text:#f0ede8;--text2:#9a9793;--text3:#5a5755;
+  --accent:#e8c547;--accent2:#c4a030;
+  --green:#3dd68c;--red:#e85454;--orange:#f0923a;--blue:#5b9ef0;
+  --card-r:10px;
+  --font-display:'Barlow Condensed',sans-serif;
+  --font-body:'Barlow',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--font-body);min-height:100vh}
+
+/* LOADING */
+.loading-screen{
+  position:fixed;inset:0;background:var(--bg);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;
+  z-index:999;transition:opacity .4s;
+}
+.loading-screen.hidden{opacity:0;pointer-events:none}
+.loading-logo{font-family:var(--font-display);font-size:40px;font-weight:900;color:var(--accent);letter-spacing:.15em}
+.loading-logo span{color:var(--text3);font-weight:400}
+.loading-msg{font-family:var(--font-display);font-size:14px;color:var(--text3);letter-spacing:.1em}
+.loading-bar{width:200px;height:3px;background:var(--border);border-radius:2px;overflow:hidden}
+.loading-fill{height:100%;background:var(--accent);border-radius:2px;animation:loadpulse 1.2s ease-in-out infinite}
+@keyframes loadpulse{0%{width:0%}50%{width:80%}100%{width:100%}}
+
+/* HEADER */
+.header{
+  background:var(--bg2);border-bottom:1px solid var(--border);
+  padding:0 1.5rem;display:flex;align-items:center;justify-content:space-between;
+  height:56px;position:sticky;top:0;z-index:100;
+}
+.logo{font-family:var(--font-display);font-size:22px;font-weight:900;letter-spacing:.12em;color:var(--accent)}
+.logo span{color:var(--text3);font-weight:400}
+.header-right{display:flex;align-items:center;gap:10px}
+.save-status{font-family:var(--font-display);font-size:12px;letter-spacing:.06em;color:var(--text3);display:flex;align-items:center;gap:5px}
+.save-status .dot{width:7px;height:7px;border-radius:50%;background:var(--text3);transition:background .3s}
+.save-status.saved .dot{background:var(--green)}
+.save-status.saving .dot{background:var(--accent)}
+.save-status.error .dot{background:var(--red)}
+.nav-tabs{display:flex;gap:2px}
+.nav-tab{
+  padding:6px 16px;font-family:var(--font-display);font-size:15px;font-weight:600;
+  letter-spacing:.06em;background:transparent;border:none;color:var(--text3);
+  cursor:pointer;border-radius:6px;transition:all .15s;
+}
+.nav-tab:hover{color:var(--text2);background:var(--bg3)}
+.nav-tab.active{color:var(--accent);background:rgba(232,197,71,.1)}
+
+.main{max-width:860px;margin:0 auto;padding:1.5rem}
+
+/* WEEK BAR */
+.week-bar{
+  display:flex;align-items:center;gap:1rem;margin-bottom:1.5rem;
+  padding:12px 18px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--card-r);
+}
+.week-label{font-family:var(--font-display);font-size:13px;letter-spacing:.08em;color:var(--text3);text-transform:uppercase}
+.week-num{font-family:var(--font-display);font-size:28px;font-weight:800;color:var(--accent);line-height:1}
+.week-arrows{display:flex;gap:6px;margin-left:auto}
+.week-arrows button{
+  width:32px;height:32px;background:var(--bg3);border:1px solid var(--border);
+  border-radius:6px;color:var(--text2);cursor:pointer;font-size:16px;
+  display:flex;align-items:center;justify-content:center;transition:all .15s;
+}
+.week-arrows button:hover{border-color:var(--accent);color:var(--accent)}
+
+/* DAY TABS */
+.day-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1.5rem}
+.day-tab{
+  padding:7px 18px;font-family:var(--font-display);font-size:14px;font-weight:700;
+  letter-spacing:.08em;text-transform:uppercase;background:var(--bg2);
+  border:1px solid var(--border);border-radius:6px;color:var(--text3);cursor:pointer;transition:all .15s;
+}
+.day-tab:hover{color:var(--text);border-color:var(--border2)}
+.day-tab.active{background:var(--accent);color:var(--bg);border-color:var(--accent)}
+
+/* STATS */
+.stats-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin-bottom:1.5rem}
+.stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--card-r);padding:12px 14px}
+.stat-label{font-family:var(--font-display);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:4px}
+.stat-val{font-family:var(--font-display);font-size:26px;font-weight:800;color:var(--text);line-height:1}
+.stat-sub{font-size:11px;color:var(--text3);margin-top:2px}
+
+/* SECTION */
+.section-block{margin-bottom:1.5rem}
+.section-label{
+  font-family:var(--font-display);font-size:12px;font-weight:700;
+  letter-spacing:.14em;text-transform:uppercase;color:var(--text3);
+  margin-bottom:10px;border-left:2px solid var(--accent);padding-left:8px;
+}
+
+/* EXERCISE CARD */
+.ex-card{
+  background:var(--bg2);border:1px solid var(--border);
+  border-radius:var(--card-r);padding:16px 18px;margin-bottom:10px;transition:border-color .2s;
+}
+.ex-card.sig-up{border-color:var(--green)}
+.ex-card.sig-warn{border-color:var(--orange)}
+.ex-card.sig-deload{border-color:var(--red)}
+.ex-top{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.ex-name{font-family:var(--font-display);font-size:17px;font-weight:700;letter-spacing:.04em;color:var(--text);flex:1}
+.badge{font-family:var(--font-display);font-size:11px;font-weight:600;letter-spacing:.08em;padding:2px 8px;border-radius:4px;text-transform:uppercase}
+.badge-compound{background:rgba(91,158,240,.15);color:var(--blue);border:1px solid rgba(91,158,240,.25)}
+.badge-iso{background:rgba(232,197,71,.1);color:var(--accent2);border:1px solid rgba(232,197,71,.2)}
+.badge-sets{background:var(--bg3);color:var(--text3);border:1px solid var(--border)}
+.prev-row{font-size:12px;color:var(--text3);margin-bottom:10px}
+.prev-row strong{color:var(--text2)}
+
+/* REP BAR */
+.rep-bar-wrap{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.rep-range-label{font-size:11px;color:var(--text3);min-width:60px;font-family:var(--font-display);letter-spacing:.04em}
+.rep-track{flex:1;height:5px;background:var(--bg3);border-radius:3px;overflow:hidden}
+.rep-fill{height:100%;border-radius:3px;transition:width .4s,background .3s}
+.rep-count{font-family:var(--font-display);font-size:14px;font-weight:700;min-width:24px;text-align:right}
+
+/* INPUTS */
+.input-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.field{display:flex;flex-direction:column;gap:5px}
+.field label{font-family:var(--font-display);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--text3)}
+.field input{
+  background:var(--bg3);border:1px solid var(--border);border-radius:6px;
+  color:var(--text);font-family:var(--font-display);font-size:18px;font-weight:600;
+  padding:8px 12px;width:100%;transition:border-color .15s;
+}
+.field input:focus{outline:none;border-color:var(--accent)}
+.field input::placeholder{color:var(--text3);font-weight:400}
+
+/* SIGNAL */
+.signal-box{display:flex;align-items:flex-start;gap:8px;padding:9px 12px;border-radius:7px;font-size:12.5px;line-height:1.4}
+.signal-box.sig-up{background:rgba(61,214,140,.1);color:#3dd68c;border:1px solid rgba(61,214,140,.2)}
+.signal-box.sig-hold{background:rgba(90,87,85,.15);color:var(--text2);border:1px solid var(--border)}
+.signal-box.sig-warn{background:rgba(240,146,58,.1);color:var(--orange);border:1px solid rgba(240,146,58,.2)}
+.signal-box.sig-deload{background:rgba(232,84,84,.1);color:var(--red);border:1px solid rgba(232,84,84,.2)}
+.signal-box.sig-new{background:rgba(91,158,240,.1);color:var(--blue);border:1px solid rgba(91,158,240,.2)}
+.sig-icon{font-size:14px;margin-top:1px;flex-shrink:0}
+
+.hist-toggle{font-size:11px;color:var(--text3);cursor:pointer;margin-top:8px;display:inline-flex;align-items:center;gap:4px;text-decoration:underline}
+.hist-toggle:hover{color:var(--text2)}
+.hist-box{margin-top:8px;padding:10px 12px;background:var(--bg3);border-radius:7px;border:1px solid var(--border)}
+.hist-row{display:grid;grid-template-columns:60px 1fr 1fr;font-size:12px;color:var(--text2);padding:4px 0;border-bottom:1px solid var(--border)}
+.hist-row:last-child{border-bottom:none}
+.hist-row .wk{color:var(--text3);font-family:var(--font-display)}
+
+/* SAVE */
+.save-row{display:flex;justify-content:flex-end;margin-top:1.5rem}
+.btn-save{
+  padding:10px 28px;background:var(--accent);color:var(--bg);border:none;
+  border-radius:7px;font-family:var(--font-display);font-size:16px;font-weight:800;
+  letter-spacing:.08em;text-transform:uppercase;cursor:pointer;transition:opacity .15s,transform .1s;
+}
+.btn-save:hover{opacity:.85}
+.btn-save:active{transform:scale(.97)}
+.btn-save:disabled{opacity:.4;cursor:not-allowed}
+
+/* LEGEND */
+.sig-legend{display:flex;gap:16px;flex-wrap:wrap;padding:10px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--card-r);margin-bottom:1.5rem}
+.sig-legend-item{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text3)}
+.sig-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+
+/* GRAPHS */
+.graphs-header{display:flex;align-items:center;gap:12px;margin-bottom:1.5rem;flex-wrap:wrap}
+.graphs-header h2{font-family:var(--font-display);font-size:22px;font-weight:800;letter-spacing:.08em;color:var(--text)}
+.filter-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1.5rem}
+.filter-btn{
+  padding:5px 14px;font-family:var(--font-display);font-size:13px;font-weight:600;
+  letter-spacing:.06em;text-transform:uppercase;background:var(--bg2);
+  border:1px solid var(--border);border-radius:5px;color:var(--text3);cursor:pointer;transition:all .15s;
+}
+.filter-btn:hover{color:var(--text)}
+.filter-btn.active{background:rgba(232,197,71,.12);border-color:var(--accent);color:var(--accent)}
+.graph-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:16px}
+.graph-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--card-r);padding:16px}
+.graph-title{font-family:var(--font-display);font-size:15px;font-weight:700;letter-spacing:.06em;color:var(--text);margin-bottom:4px}
+.graph-meta{font-size:11px;color:var(--text3);margin-bottom:14px;display:flex;gap:12px}
+.graph-meta span{display:flex;align-items:center;gap:4px}
+.graph-meta .dot{width:6px;height:6px;border-radius:50%;display:inline-block}
+canvas{max-width:100%}
+.no-data{text-align:center;padding:40px;color:var(--text3);font-size:14px}
+
+/* TOAST */
+.toast{
+  position:fixed;bottom:24px;right:24px;background:var(--green);color:var(--bg);
+  padding:10px 20px;border-radius:7px;font-family:var(--font-display);font-size:14px;
+  font-weight:700;letter-spacing:.06em;z-index:999;opacity:0;
+  transform:translateY(10px);transition:all .25s;pointer-events:none;
+}
+.toast.show{opacity:1;transform:translateY(0)}
+
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--bg2)}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+
+@media(max-width:600px){
+  .nav-tab{padding:6px 10px;font-size:13px}
+  .graph-grid{grid-template-columns:1fr}
+  .header{padding:0 1rem}
+  .main{padding:1rem}
+}
+</style>
+</head>
+<body>
+
+<div class="loading-screen" id="loadingScreen">
+  <div class="loading-logo">IRON<span>LOG</span></div>
+  <div class="loading-bar"><div class="loading-fill"></div></div>
+  <div class="loading-msg" id="loadingMsg">CONNECTING TO DATABASE...</div>
+</div>
+
+<div class="header">
+  <div class="logo">IRON<span>LOG</span></div>
+  <div class="header-right">
+    <div class="save-status" id="saveStatus">
+      <div class="dot"></div>
+      <span id="saveStatusText">ready</span>
+    </div>
+    <div class="nav-tabs">
+      <button class="nav-tab active" onclick="showView('log')">Log</button>
+      <button class="nav-tab" onclick="showView('graphs')">Graphs</button>
+    </div>
+  </div>
+</div>
+
+<div class="main">
+  <div id="view-log">
+    <div class="week-bar">
+      <div>
+        <div class="week-label">Training week</div>
+        <div class="week-num" id="weekNum">1</div>
+      </div>
+      <div class="week-arrows">
+        <button onclick="changeWeek(-1)">&#8592;</button>
+        <button onclick="changeWeek(1)">&#8594;</button>
+      </div>
+    </div>
+    <div class="day-tabs" id="dayTabs"></div>
+    <div class="sig-legend">
+      <div class="sig-legend-item"><div class="sig-dot" style="background:var(--green)"></div>Add weight next session</div>
+      <div class="sig-legend-item"><div class="sig-dot" style="background:var(--text3)"></div>Build reps</div>
+      <div class="sig-legend-item"><div class="sig-dot" style="background:var(--orange)"></div>1 miss — hold weight</div>
+      <div class="sig-legend-item"><div class="sig-dot" style="background:var(--red)"></div>2 misses — deload now</div>
+    </div>
+    <div class="stats-strip" id="statsStrip"></div>
+    <div id="exerciseArea"></div>
+    <div class="save-row">
+      <button class="btn-save" id="saveBtn" onclick="saveSession()">&#10003; Save Session</button>
+    </div>
+  </div>
+
+  <div id="view-graphs" style="display:none">
+    <div class="graphs-header"><h2>PROGRESSION GRAPHS</h2></div>
+    <div class="filter-row" id="graphFilterRow"></div>
+    <div class="graph-grid" id="graphGrid"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ---- SUPABASE ----
+const SUPA_URL = 'https://eubasgfirmupygxzhjeo.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV1YmFzZ2Zpcm11cHlneHpoamVvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5NjcxOTQsImV4cCI6MjA5NDU0MzE5NH0.9Zpf6uCfTsygVFmHZepTHpdb9GPa6-GWSgIJHd_E52w';
+const supa = supabase.createClient(SUPA_URL, SUPA_KEY);
+
+// ---- PROGRAM DATA ----
+const COMPOUND = ["Squats","RDLs","T-bar row","Seated close grip row","Seated wide grip row","Iso-lateral high row","Pulldown / pull-up","Shoulder press","Incline DB press","Incline machine","Dips","JM press","Rope pullover"];
+const CR = [6,8], IR = [5,8];
+
+const DAYS = [
+  {key:"anterior",label:"Anterior",sections:[
+    {title:"chest / anterior",ex:[{n:"Incline DB press",s:2},{n:"Chest fly",s:3}]},
+    {title:"biceps",ex:[{n:"Preacher curl",s:2}]},
+    {title:"legs / accessories",ex:[{n:"Leg extension",s:2},{n:"Anterior forearms",s:2}]}
+  ]},
+  {key:"posterior",label:"Posterior",sections:[
+    {title:"posterior chain",ex:[{n:"RDLs",s:2}]},
+    {title:"back",ex:[{n:"Pulldown / pull-up",s:2},{n:"T-bar row",s:2},{n:"Seated close grip row",s:2}]},
+    {title:"rear delts / triceps",ex:[{n:"Reverse fly",s:2},{n:"Single arm tricep pushdown",s:2}]},
+    {title:"accessories",ex:[{n:"Posterior forearms",s:2}]}
+  ]},
+  {key:"upper",label:"Modified Upper",sections:[
+    {title:"shoulders",ex:[{n:"Shoulder press",s:2},{n:"Lateral raises",s:2}]},
+    {title:"back",ex:[{n:"Seated wide grip row",s:2},{n:"Incline machine",s:2},{n:"Iso-lateral high row",s:2},{n:"Rope pullover",s:2}]},
+    {title:"chest / triceps",ex:[{n:"Cable fly",s:3},{n:"Dips",s:2}]}
+  ]},
+  {key:"lower",label:"Modified Lower",sections:[
+    {title:"quads",ex:[{n:"Squats",s:3},{n:"Leg extension",s:2}]},
+    {title:"hamstrings",ex:[{n:"Lying leg curl",s:2}]},
+    {title:"calves / accessories",ex:[{n:"Standing calf raises",s:2},{n:"Adductors",s:2}]}
+  ]},
+  {key:"arms",label:"Arms",sections:[
+    {title:"biceps",ex:[{n:"Seated incline curl",s:2},{n:"Behind back cable curl",s:2},{n:"Hammer curl",s:2}]},
+    {title:"triceps",ex:[{n:"JM press",s:2},{n:"Single arm tricep pushdown",s:2}]}
+  ]}
+];
+
+const ALL_EX = DAYS.flatMap(d=>d.sections.flatMap(s=>s.ex.map(e=>({...e,dayKey:d.key,dayLabel:d.label}))));
+
+let currentDay=0, currentWeek=1, inputs={}, charts={}, graphFilter='all';
+let DB = {}; // local cache: "dk||ex||wN" -> {weight,reps}
+
+// ---- SUPABASE OPERATIONS ----
+async function loadAllData() {
+  const {data,error} = await supa.from('sessions').select('*');
+  if (error) throw error;
+  DB = {};
+  (data||[]).forEach(row => {
+    DB[`${row.day_key}||${row.exercise}||w${row.week}`] = {weight:row.weight, reps:row.reps};
+  });
+}
+
+async function upsertSession(week, dayKey, exercise, weight, reps) {
+  const {error} = await supa.from('sessions').upsert(
+    {week, day_key:dayKey, exercise, weight:parseFloat(weight), reps:parseInt(reps)},
+    {onConflict:'week,day_key,exercise'}
+  );
+  if (error) throw error;
+}
+
+// ---- LOCAL CACHE ----
+function dbKey(w,dk,n){ return `${dk}||${n}||w${w}`; }
+function dbGet(w,dk,n){ return DB[dbKey(w,dk,n)]||null; }
+function dbSet(w,dk,n,d){ DB[dbKey(w,dk,n)]=d; }
+
+// ---- HELPERS ----
+function isCompound(n){ return COMPOUND.includes(n); }
+function getRange(n){ return isCompound(n)?CR:IR; }
+function ik(n){ return n.replace(/[\s\/\-]+/g,'_'); }
+
+function getPast(dk,n,limit=99){
+  let arr=[];
+  for(let w=currentWeek-1;w>=1&&arr.length<limit;w--){
+    const d=dbGet(w,dk,n);
+    if(d) arr.push({week:w,...d});
+  }
+  return arr;
+}
+
+function getAllData(dk,n){
+  let arr=[];
+  for(let w=1;w<=104;w++){
+    const d=dbGet(w,dk,n);
+    if(d&&d.weight) arr.push({week:w,weight:parseFloat(d.weight)||0,reps:parseInt(d.reps)||0});
+  }
+  return arr;
+}
+
+// ---- SIGNAL LOGIC ----
+function getSignal(dk,n,inp){
+  const [rMin,rMax]=getRange(n);
+  const past=getPast(dk,n,2);
+  const curReps=parseInt(inp?.reps)||0;
+  if(past.length===0) return{type:'new',msg:'First session — log your baseline weight and reps to failure.'};
+  const prev=past[0];
+  const prevReps=parseInt(prev.reps)||0;
+  if(curReps===0){
+    if(prevReps>=rMax) return{type:'up',msg:`Last session: ${prevReps} reps — top of range hit. Add weight this session.`};
+    if(prevReps<rMin){
+      if(past.length>=2&&parseInt(past[1].reps)<rMin)
+        return{type:'deload',msg:`Two sessions below ${rMin} reps. Deload — drop 40%, one recovery session, ramp back.`};
+      return{type:'warn',msg:`Last session: ${prevReps} reps — below ${rMin} minimum. One miss allowed. Push harder today.`};
+    }
+    return{type:'hold',msg:`Last session: ${prev.weight||'—'} kg × ${prevReps} reps. Build to ${rMax} reps before adding weight.`};
+  }
+  if(curReps>=rMax) return{type:'up',msg:`${curReps} reps — top of range! Add 2.5 kg (upper) or 5 kg (lower) next session.`};
+  if(curReps>=rMin) return{type:'hold',msg:`${curReps} reps — inside range. Keep weight, build to ${rMax} reps.`};
+  if(past.length>=1&&parseInt(past[0].reps)<rMin)
+    return{type:'deload',msg:`Below ${rMin} reps two sessions in a row. Deload next session — drop to 60% weight.`};
+  return{type:'warn',msg:`${curReps} reps — below ${rMin} minimum. Hold weight. One more miss triggers deload.`};
+}
+
+function sigClass(t){return{up:'sig-up',hold:'sig-hold',warn:'sig-warn',deload:'sig-deload',new:'sig-new'}[t]||'sig-hold';}
+function sigIcon(t){return{up:'↑',hold:'→',warn:'⚠',deload:'⛔',new:'●'}[t]||'→';}
+
+function repBarHTML(n,reps){
+  const [rMin,rMax]=getRange(n);
+  const pct=reps>0?Math.min(100,Math.round((reps/rMax)*100)):0;
+  const color=reps>=rMax?'var(--green)':reps>=rMin?'var(--orange)':reps>0?'var(--red)':'var(--border)';
+  const cc=reps>=rMax?'var(--green)':reps>=rMin?'var(--orange)':reps>0?'var(--red)':'var(--text3)';
+  return `<div class="rep-bar-wrap">
+    <span class="rep-range-label">${rMin}–${rMax} reps</span>
+    <div class="rep-track"><div class="rep-fill" style="width:${pct}%;background:${color}"></div></div>
+    <span class="rep-count" style="color:${cc}">${reps>0?reps:'—'}</span>
+  </div>`;
+}
+
+// ---- RENDER ----
+function renderTabs(){
+  document.getElementById('dayTabs').innerHTML=DAYS.map((d,i)=>
+    `<button class="day-tab ${i===currentDay?'active':''}" onclick="switchDay(${i})">${d.label}</button>`
+  ).join('');
+}
+
+function renderStats(){
+  const day=DAYS[currentDay];
+  const allEx=day.sections.flatMap(s=>s.ex);
+  const totalSets=allEx.reduce((a,e)=>a+e.s,0);
+  const filled=allEx.filter(e=>inputs[ik(e.n)]?.weight).length;
+  const sigs=allEx.map(e=>getSignal(day.key,e.n,inputs[ik(e.n)]).type);
+  const upC=sigs.filter(s=>s==='up').length;
+  const dlC=sigs.filter(s=>s==='deload').length;
+  document.getElementById('statsStrip').innerHTML=`
+    <div class="stat-card"><div class="stat-label">Sets today</div><div class="stat-val">${totalSets}</div><div class="stat-sub">total volume</div></div>
+    <div class="stat-card"><div class="stat-label">Logged</div><div class="stat-val">${filled}/${allEx.length}</div><div class="stat-sub">exercises</div></div>
+    <div class="stat-card"><div class="stat-label">Progress</div><div class="stat-val" style="color:var(--green)">${upC}</div><div class="stat-sub">add weight</div></div>
+    <div class="stat-card"><div class="stat-label">Deload</div><div class="stat-val" style="color:${dlC>0?'var(--red)':'var(--text3)'}">${dlC}</div><div class="stat-sub">exercises</div></div>
+    <div class="stat-card"><div class="stat-label">Week</div><div class="stat-val" style="color:var(--accent)">${currentWeek}</div><div class="stat-sub">of training</div></div>
+  `;
+}
+
+function renderExercises(){
+  const day=DAYS[currentDay];
+  let html='';
+  day.sections.forEach(sec=>{
+    html+=`<div class="section-block"><div class="section-label">${sec.title}</div>`;
+    sec.ex.forEach(ex=>{
+      const key=ik(ex.n);
+      const inp=inputs[key]||{};
+      const sig=getSignal(day.key,ex.n,inp);
+      const reps=parseInt(inp.reps)||0;
+      const past=getPast(day.key,ex.n,5);
+      const prev=past[0];
+      const prevText=prev?`prev: <strong>${prev.weight||'—'} kg</strong> × <strong>${prev.reps||'—'} reps</strong>`:'no previous data';
+      const typeBadge=isCompound(ex.n)?'badge-compound':'badge-iso';
+      const typeLabel=isCompound(ex.n)?'compound':'isolation';
+      const histRows=past.map(h=>`<div class="hist-row"><span class="wk">Wk ${h.week}</span><span>${h.weight||'—'} kg</span><span>${h.reps||'—'} reps</span></div>`).join('');
+      html+=`<div class="ex-card ${sigClass(sig.type)}" id="card_${key}">
+        <div class="ex-top">
+          <span class="ex-name">${ex.n}</span>
+          <span class="badge ${typeBadge}">${typeLabel}</span>
+          <span class="badge badge-sets">${ex.s} sets</span>
+        </div>
+        <div class="prev-row">${prevText}</div>
+        <div id="bar_${key}">${repBarHTML(ex.n,reps)}</div>
+        <div class="input-row">
+          <div class="field"><label>Weight (kg)</label><input type="number" step="0.5" placeholder="kg" value="${inp.weight||''}" oninput="upd('${key}','weight',this.value,'${day.key}','${ex.n}')"></div>
+          <div class="field"><label>Reps to failure</label><input type="number" placeholder="${getRange(ex.n)[0]}–${getRange(ex.n)[1]}" value="${inp.reps||''}" oninput="upd('${key}','reps',this.value,'${day.key}','${ex.n}')"></div>
+        </div>
+        <div class="signal-box ${sigClass(sig.type)}" id="sig_${key}"><span class="sig-icon">${sigIcon(sig.type)}</span><span>${sig.msg}</span></div>
+        ${past.length>0?`<div class="hist-toggle" onclick="toggleHist('hb_${key}')">&#9660; history (${past.length} sessions)</div><div id="hb_${key}" style="display:none" class="hist-box">${histRows}</div>`:''}
+      </div>`;
+    });
+    html+='</div>';
+  });
+  document.getElementById('exerciseArea').innerHTML=html;
+}
+
+function upd(key,field,val,dk,exName){
+  if(!inputs[key]) inputs[key]={};
+  inputs[key][field]=val;
+  renderStats();
+  const reps=parseInt(inputs[key].reps)||0;
+  const sig=getSignal(dk,exName,inputs[key]);
+  const sigEl=document.getElementById('sig_'+key);
+  if(sigEl){sigEl.className='signal-box '+sigClass(sig.type);sigEl.innerHTML=`<span class="sig-icon">${sigIcon(sig.type)}</span><span>${sig.msg}</span>`;}
+  const barEl=document.getElementById('bar_'+key);
+  if(barEl) barEl.innerHTML=repBarHTML(exName,reps);
+  const card=document.getElementById('card_'+key);
+  if(card) card.className='ex-card '+sigClass(sig.type);
+}
+
+function toggleHist(id){const el=document.getElementById(id);if(el)el.style.display=el.style.display==='none'?'block':'none';}
+
+// ---- SAVE ----
+async function saveSession(){
+  const day=DAYS[currentDay];
+  const toSave=[];
+  day.sections.flatMap(s=>s.ex).forEach(ex=>{
+    const key=ik(ex.n);
+    if(inputs[key]?.weight) toSave.push({ex,key,inp:inputs[key]});
+  });
+  if(toSave.length===0){showToast('Nothing to save — enter at least one weight!','var(--orange)');return;}
+
+  const btn=document.getElementById('saveBtn');
+  btn.disabled=true;
+  setSaveStatus('saving','saving...');
+
+  try{
+    await Promise.all(toSave.map(({ex,inp})=>
+      upsertSession(currentWeek,day.key,ex.n,inp.weight,inp.reps)
+    ));
+    toSave.forEach(({ex,inp})=>dbSet(currentWeek,day.key,ex.n,inp));
+    inputs={};
+    renderExercises();
+    renderStats();
+    setSaveStatus('saved','saved');
+    showToast(`Session saved — ${toSave.length} exercises written to database`);
+  }catch(e){
+    setSaveStatus('error','save failed!');
+    showToast('Save failed — check your connection','var(--red)');
+    console.error(e);
+  }
+  btn.disabled=false;
+}
+
+function setSaveStatus(type,text){
+  const el=document.getElementById('saveStatus');
+  const tx=document.getElementById('saveStatusText');
+  el.className='save-status '+type;
+  tx.textContent=text;
+  if(type==='saved') setTimeout(()=>{el.className='save-status';tx.textContent='ready';},3000);
+}
+
+function showToast(msg,bg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;
+  t.style.background=bg||'var(--green)';
+  t.style.color=bg?'white':'var(--bg)';
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),3000);
+}
+
+function switchDay(i){currentDay=i;inputs={};renderTabs();renderStats();renderExercises();}
+function changeWeek(dir){
+  if(currentWeek+dir<1)return;
+  currentWeek+=dir;inputs={};
+  document.getElementById('weekNum').textContent=currentWeek;
+  renderStats();renderExercises();
+}
+
+// ---- GRAPHS ----
+function buildGraphs(){
+  Object.values(charts).forEach(c=>c.destroy());charts={};
+  const grid=document.getElementById('graphGrid');
+  const filteredEx=graphFilter==='all'?ALL_EX:
+    graphFilter==='compound'?ALL_EX.filter(e=>isCompound(e.n)):
+    graphFilter==='isolation'?ALL_EX.filter(e=>!isCompound(e.n)):
+    ALL_EX.filter(e=>e.dayKey===graphFilter);
+  const withData=filteredEx.filter(e=>getAllData(e.dayKey,e.n).length>0);
+  if(withData.length===0){grid.innerHTML=`<div class="no-data" style="grid-column:1/-1">No data yet — log some sessions first.</div>`;return;}
+  grid.innerHTML=withData.map(e=>`<div class="graph-card">
+    <div class="graph-title">${e.n}</div>
+    <div class="graph-meta">
+      <span><div class="dot" style="background:var(--accent)"></div>Weight (kg)</span>
+      <span><div class="dot" style="background:var(--blue)"></div>Reps</span>
+      <span style="color:var(--text3)">${e.dayLabel}</span>
+    </div>
+    <canvas id="ch_${ik(e.dayKey)}_${ik(e.n)}" height="160"></canvas>
+  </div>`).join('');
+  withData.forEach(e=>{
+    const data=getAllData(e.dayKey,e.n);
+    const id=`ch_${ik(e.dayKey)}_${ik(e.n)}`;
+    const ctx=document.getElementById(id);
+    if(!ctx)return;
+    charts[id]=new Chart(ctx,{
+      type:'line',
+      data:{
+        labels:data.map(d=>`Wk ${d.week}`),
+        datasets:[
+          {label:'Weight (kg)',data:data.map(d=>d.weight),borderColor:'rgba(232,197,71,0.9)',backgroundColor:'rgba(232,197,71,0.08)',tension:0.35,pointRadius:4,pointBackgroundColor:'rgba(232,197,71,1)',yAxisID:'y',fill:true},
+          {label:'Reps',data:data.map(d=>d.reps),borderColor:'rgba(91,158,240,0.8)',backgroundColor:'transparent',tension:0.35,pointRadius:4,pointBackgroundColor:'rgba(91,158,240,1)',yAxisID:'y2',borderDash:[4,3]}
+        ]
+      },
+      options:{
+        responsive:true,
+        interaction:{mode:'index',intersect:false},
+        plugins:{legend:{display:false},tooltip:{backgroundColor:'#1a1a1e',borderColor:'#2a2a2e',borderWidth:1,titleColor:'#f0ede8',bodyColor:'#9a9793'}},
+        scales:{
+          x:{ticks:{color:'#5a5755',font:{family:'Barlow Condensed',size:11}},grid:{color:'rgba(42,42,46,0.5)'}},
+          y:{position:'left',ticks:{color:'#e8c547',font:{family:'Barlow Condensed',size:11}},grid:{color:'rgba(42,42,46,0.5)'},title:{display:true,text:'kg',color:'#5a5755',font:{size:10}}},
+          y2:{position:'right',ticks:{color:'#5b9ef0',font:{family:'Barlow Condensed',size:11}},grid:{drawOnChartArea:false},title:{display:true,text:'reps',color:'#5a5755',font:{size:10}}}
+        }
+      }
+    });
+  });
+}
+
+function buildFilterRow(){
+  const filters=[
+    {key:'all',label:'All exercises'},{key:'compound',label:'Compound'},{key:'isolation',label:'Isolation'},
+    ...DAYS.map(d=>({key:d.key,label:d.label}))
+  ];
+  document.getElementById('graphFilterRow').innerHTML=filters.map(f=>
+    `<button class="filter-btn ${graphFilter===f.key?'active':''}" onclick="setFilter('${f.key}')">${f.label}</button>`
+  ).join('');
+}
+
+function setFilter(k){graphFilter=k;buildFilterRow();buildGraphs();}
+
+function showView(v){
+  document.getElementById('view-log').style.display=v==='log'?'block':'none';
+  document.getElementById('view-graphs').style.display=v==='graphs'?'block':'none';
+  document.querySelectorAll('.nav-tab').forEach((t,i)=>t.classList.toggle('active',(i===0&&v==='log')||(i===1&&v==='graphs')));
+  if(v==='graphs'){buildFilterRow();buildGraphs();}
+}
+
+// ---- INIT ----
+async function init(){
+  const screen=document.getElementById('loadingScreen');
+  const msg=document.getElementById('loadingMsg');
+  try{
+    msg.textContent='LOADING YOUR DATA...';
+    await loadAllData();
+    msg.textContent='READY';
+    setTimeout(()=>screen.classList.add('hidden'),400);
+  }catch(e){
+    msg.textContent='CONNECTION FAILED — CHECK SUPABASE';
+    msg.style.color='var(--red)';
+    console.error(e);
+  }
+  renderTabs();
+  renderStats();
+  renderExercises();
+}
+
+init();
+</script>
+</body>
+</html>
