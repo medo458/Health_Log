@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0f172a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Sleep">
+<title>IRON LOG — Sleep</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0d0d0f;--bg2:#141416;--bg3:#1a1a1e;--border:#2a2a2e;--text:#f0ede8;--muted:#5a5755;--dim:#5a5755;--accent:#e8c547;--deep:#5b9ef0;--rem:#a78bfa;--green:#4ade80;--orange:#fb923c;--pink:#f472b6;--sky:#38bdf8;--yellow:#fbbf24;--red:#ef4444}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif;overflow:hidden}
+#app{display:flex;flex-direction:column;min-height:100vh}
+.header{background:linear-gradient(135deg,#1a1a1e 0%,#0d0d0f 100%);border-bottom:1px solid var(--border);padding:48px 20px 14px;flex-shrink:0}
+.header-row{display:flex;justify-content:space-between;align-items:center}
+.header h1{font-size:20px;font-weight:900;letter-spacing:.08em;font-family:'Barlow Condensed',sans-serif;text-transform:uppercase}
+.header p{font-size:11px;color:var(--muted);margin-top:2px}
+.add-btn{background:var(--accent);border:none;border-radius:10px;color:#0d0d0f;padding:8px 16px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Barlow',sans-serif}
+.nav{display:flex;gap:6px;padding:10px 16px;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--bg)}
+.nav-btn{padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;border:none;background:var(--bg2);color:var(--muted);font-family:'Barlow',sans-serif;transition:all 0.2s}
+.nav-btn.active{background:var(--accent);color:#0d0d0f}
+.scroll{flex:1;padding-bottom:80px}
+.card{background:var(--bg2);border-radius:14px;padding:16px;margin:10px 14px}
+.section-label{font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:0.1em;padding:14px 16px 4px}
+.score-row{display:flex;align-items:center;gap:16px}
+.breakdown{flex:1}
+.mini-bar{margin-bottom:9px}
+.mini-bar-top{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:3px}
+.mini-bar-val{font-weight:700}
+.mini-bar-track{height:5px;background:var(--bg3);border-radius:4px}
+.mini-bar-fill{height:100%;border-radius:4px;transition:width 0.6s ease}
+.stage-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:10px}
+.stage-cell{background:var(--bg3);border-radius:10px;padding:10px 4px;text-align:center}
+.stage-pct{font-size:17px;font-weight:800;font-family:'Barlow Condensed',sans-serif}
+.stage-dur{font-size:10px;color:#94a3b8;margin-top:2px}
+.stage-lbl{font-size:10px;color:var(--dim);margin-top:1px}
+.vitals-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:10px}
+.vital-cell{background:var(--bg3);border-radius:10px;padding:10px 4px;text-align:center}
+.vital-val{font-size:15px;font-weight:800;font-family:'Barlow Condensed',sans-serif}
+.vital-lbl{font-size:10px;color:var(--dim);margin-top:3px}
+.log-row{display:flex;align-items:center;justify-content:space-between;background:var(--bg2);border-radius:10px;padding:13px 14px;margin:7px 14px;cursor:pointer;border:1px solid #334155;transition:border-color 0.2s}
+.log-row:active{border-color:var(--accent)}
+.log-date{font-size:14px;font-weight:700}
+.log-sub{font-size:12px;color:var(--dim);margin-top:2px}
+.log-score{font-size:24px;font-weight:800;font-family:'Barlow Condensed',sans-serif}
+.log-score-sub{font-size:10px;color:var(--dim)}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.detail-cell{background:var(--bg3);border-radius:8px;padding:10px}
+.detail-label{font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:0.08em}
+.detail-val{font-size:13px;font-weight:700;font-family:'Barlow Condensed',sans-serif;color:var(--text);margin-top:3px}
+.notes-card{border-left:3px solid var(--accent)}
+.notes-text{font-size:13px;color:#94a3b8;margin-top:6px;line-height:1.5}
+.trend-svg{width:100%;display:block}
+.form-wrap{padding:0 14px}
+.field{margin-bottom:12px}
+.field label{display:block;font-size:11px;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.08em}
+.field input{width:100%;background:var(--bg2);border:1px solid #334155;border-radius:8px;padding:10px 12px;color:var(--text);font-size:14px;font-family:'Barlow Condensed',sans-serif;outline:none;-webkit-appearance:none;appearance:none}
+.field input:focus{border-color:var(--accent)}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.four-col{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.btn{width:100%;border:none;border-radius:10px;padding:13px;font-size:15px;font-weight:700;cursor:pointer;font-family:'Barlow',sans-serif;margin-top:8px;transition:opacity 0.2s}
+.btn:active{opacity:.85}
+.btn-primary{background:var(--accent);color:#0d0d0f}
+.btn-danger{background:var(--red);color:#fff}
+.btn-ghost{background:var(--bg2);color:var(--muted)}
+.back-btn{background:none;border:none;color:var(--accent);font-size:13px;cursor:pointer;font-family:'Barlow',sans-serif;padding:0}
+.empty{text-align:center;padding:60px 20px;color:var(--dim);font-size:14px}
+.toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:var(--green);color:#0d0d0f;padding:10px 24px;border-radius:20px;font-weight:700;font-size:14px;opacity:0;transition:opacity 0.3s;pointer-events:none;z-index:999}
+.toast.show{opacity:1}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="header">
+    <div class="header-row">
+      <div><h1>Sleep Tracker</h1><p>Ahmed · Amazfit Pop 3S</p></div>
+      <button class="add-btn" onclick="showView('add')">+ Log Night</button>
+    </div>
+  </div>
+  <div class="nav">
+    <button class="nav-btn active" id="nav-dashboard" onclick="showView('dashboard')">Dashboard</button>
+    <button class="nav-btn" id="nav-history" onclick="showView('history')">History</button>
+    <button class="nav-btn" id="nav-trend" onclick="showView('trend')">Trend</button>
+  </div>
+  <div class="scroll" id="main"></div>
+</div>
+<div class="toast" id="toast">Saved!</div>
+<script>
+const STORAGE_KEY='ahmed_sleep_v2';
+const SEED=[
+  {id:'1',date:'2026-03-17',bedtime:'03:49',waketime:'09:34',totalSleep:344,deep:102,deepPct:30,light:216,lightPct:62,rem:26,remPct:8,wake:1,wakePct:0,rhr:53,avgHr:56,spo2:97,stress:30,notes:'Ramadan — late bedtime'},
+  {id:'2',date:'2026-03-19',bedtime:'02:43',waketime:'08:55',totalSleep:367,deep:119,deepPct:32,light:205,lightPct:55,rem:43,remPct:12,wake:5,wakePct:1,rhr:53,avgHr:56,spo2:97,stress:26,notes:'Ramadan — slight improvement'},
+  {id:'3',date:'2026-03-21',bedtime:'22:20',waketime:'06:11',totalSleep:471,deep:183,deepPct:39,light:236,lightPct:50,rem:52,remPct:11,wake:0,wakePct:0,rhr:49,avgHr:57,spo2:97,stress:25,notes:'Early bedtime — best night'}
+];
+function loadLogs(){try{const d=localStorage.getItem(STORAGE_KEY);return d?JSON.parse(d):SEED;}catch{return SEED;}}
+function saveLogs(l){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(l));}catch{}}
+let logs=loadLogs();
+if(!localStorage.getItem(STORAGE_KEY))saveLogs(logs);
+
+function calcScore(log){
+  const dur=log.totalSleep;
+  const d=log.deepPct,r=log.remPct,w=log.wakePct;
+  const durS=dur>=480?100:dur>=420?90:dur>=360?75:dur>=300?60:45;
+  const deepS=d>=35?100:d>=25?90:d>=18?75:d>=12?60:45;
+  const remS=r>=22?100:r>=18?88:r>=13?72:r>=9?58:40;
+  const effS=w<=1?100:w<=3?88:w<=6?72:55;
+  const rhrS=!log.rhr?80:log.rhr<=50?98:log.rhr<=55?90:log.rhr<=62?78:60;
+  const spo2S=!log.spo2?90:log.spo2>=98?100:log.spo2>=96?93:log.spo2>=94?78:55;
+  const strS=!log.stress?80:log.stress<=25?95:log.stress<=35?82:log.stress<=50?65:45;
+  return Math.round(durS*.25+deepS*.20+remS*.20+effS*.15+rhrS*.10+spo2S*.05+strS*.05);
+}
+function calcBreakdown(log){
+  const dur=log.totalSleep,d=log.deepPct,r=log.remPct,w=log.wakePct;
+  return{
+    durScore:dur>=480?100:dur>=420?90:dur>=360?75:dur>=300?60:45,
+    deepScore:d>=35?100:d>=25?90:d>=18?75:d>=12?60:45,
+    remScore:r>=22?100:r>=18?88:r>=13?72:r>=9?58:40,
+    effScore:w<=1?100:w<=3?88:w<=6?72:55,
+    rhrScore:!log.rhr?80:log.rhr<=50?98:log.rhr<=55?90:log.rhr<=62?78:60
+  };
+}
+function scoreColor(s){return s>=85?'#4ade80':s>=75?'#facc15':s>=65?'#fb923c':'#f87171';}
+function fmtMins(m){if(m===null||m===undefined||m==='')return'—';const h=Math.floor(m/60),mn=m%60;return h>0?h+'h '+mn+'m':mn+'m';}
+function ring(score){
+  const r=54,circ=2*Math.PI*r,filled=(score/100)*circ,color=scoreColor(score);
+  return`<svg width="130" height="130" viewBox="0 0 140 140"><circle cx="70" cy="70" r="${r}" fill="none" stroke="#1e293b" stroke-width="10"/><circle cx="70" cy="70" r="${r}" fill="none" stroke="${color}" stroke-width="10" stroke-dasharray="${filled} ${circ-filled}" stroke-linecap="round" transform="rotate(-90 70 70)"/><text x="70" y="65" text-anchor="middle" fill="${color}" font-size="28" font-weight="800" font-family="DM Mono,monospace">${score}</text><text x="70" y="83" text-anchor="middle" fill="#64748b" font-size="11" font-family="DM Sans,sans-serif">/100</text></svg>`;
+}
+function bar(label,value,max,color){
+  const pct=Math.min(100,(value/max)*100);
+  return`<div class="mini-bar"><div class="mini-bar-top"><span>${label}</span><span class="mini-bar-val" style="color:${color}">${value}/100</span></div><div class="mini-bar-track"><div class="mini-bar-fill" style="width:${pct}%;background:${color}"></div></div></div>`;
+}
+
+function renderDashboard(){
+  const sorted=[...logs].sort((a,b)=>b.date.localeCompare(a.date));
+  const log=sorted[0];
+  if(!log)return'<div class="empty">No nights logged yet.<br>Tap + Log Night to start.</div>';
+  const score=calcScore(log);
+  const{durScore,deepScore,remScore,effScore,rhrScore}=calcBreakdown(log);
+  return`<div class="section-label">Latest Night · ${log.date}</div>
+  <div class="card"><div class="score-row"><div>${ring(score)}</div><div class="breakdown"><div style="font-size:12px;color:#94a3b8;margin-bottom:10px">Score Breakdown</div>${bar('Duration',durScore,100,'#818cf8')}${bar('Deep Sleep',deepScore,100,'#4ade80')}${bar('REM',remScore,100,'#38bdf8')}${bar('Efficiency',effScore,100,'#fb923c')}${bar('Heart Rate',rhrScore,100,'#f472b6')}</div></div></div>
+  <div class="card"><div class="section-label" style="padding:0 0 8px">Sleep Stages</div><div class="stage-grid">
+    <div class="stage-cell"><div class="stage-pct" style="color:#4361ee">${log.deepPct}%</div><div class="stage-dur">${fmtMins(log.deep)}</div><div class="stage-lbl">Deep</div></div>
+    <div class="stage-cell"><div class="stage-pct" style="color:#818cf8">${log.lightPct}%</div><div class="stage-dur">${fmtMins(log.light)}</div><div class="stage-lbl">Light</div></div>
+    <div class="stage-cell"><div class="stage-pct" style="color:#a5b4fc">${log.remPct}%</div><div class="stage-dur">${fmtMins(log.rem)}</div><div class="stage-lbl">REM</div></div>
+    <div class="stage-cell"><div class="stage-pct" style="color:#fbbf24">${log.wakePct}%</div><div class="stage-dur">${fmtMins(log.wake)}</div><div class="stage-lbl">Wake</div></div>
+  </div></div>
+  <div class="card"><div class="section-label" style="padding:0 0 8px">Vitals</div><div class="vitals-grid">
+    <div class="vital-cell"><div class="vital-val" style="color:#f472b6">${log.rhr||'—'}</div><div class="vital-lbl">RHR bpm</div></div>
+    <div class="vital-cell"><div class="vital-val" style="color:#fb923c">${log.avgHr||'—'}</div><div class="vital-lbl">Avg HR</div></div>
+    <div class="vital-cell"><div class="vital-val" style="color:#38bdf8">${log.spo2?log.spo2+'%':'—'}</div><div class="vital-lbl">SpO2</div></div>
+    <div class="vital-cell"><div class="vital-val" style="color:#4ade80">${log.stress||'—'}</div><div class="vital-lbl">Stress</div></div>
+  </div></div>
+  ${log.notes?`<div class="card notes-card"><div class="section-label" style="padding:0 0 4px">Notes</div><div class="notes-text">${log.notes}</div></div>`:''}`;
+}
+
+function renderHistory(){
+  const sorted=[...logs].sort((a,b)=>b.date.localeCompare(a.date));
+  if(!sorted.length)return'<div class="empty">No nights logged yet.</div>';
+  return`<div class="section-label">${logs.length} Night${logs.length!==1?'s':''} Logged</div>`+
+    sorted.map(log=>{const score=calcScore(log);return`<div class="log-row" onclick="showDetail('${log.id}')"><div><div class="log-date">${log.date}</div><div class="log-sub">${fmtMins(log.totalSleep)} · ${log.bedtime}–${log.waketime}</div></div><div style="text-align:right"><div class="log-score" style="color:${scoreColor(score)}">${score}</div><div class="log-score-sub">/ 100</div></div></div>`;}).join('');
+}
+
+function renderTrend(){
+  const sorted=[...logs].sort((a,b)=>a.date.localeCompare(b.date));
+  if(sorted.length<2)return'<div class="card"><div class="empty" style="padding:30px 0">Add at least 2 nights to see trend</div></div>';
+  const scores=sorted.map(l=>calcScore(l));
+  const W=340,H=130,pad=28;
+  const maxS=Math.max(...scores,100),minS=Math.max(0,Math.min(...scores)-10);
+  const xs=sorted.map((_,i)=>pad+(i/(sorted.length-1))*(W-pad*2));
+  const ys=scores.map(s=>H-pad-((s-minS)/(maxS-minS||1))*(H-pad*2));
+  const path=xs.map((x,i)=>`${i===0?'M':'L'}${x},${ys[i]}`).join(' ');
+  const area=`${path} L${xs[xs.length-1]},${H-4} L${xs[0]},${H-4} Z`;
+  const pts=xs.map((x,i)=>`<circle cx="${x}" cy="${ys[i]}" r="5" fill="${scoreColor(scores[i])}" stroke="#0f172a" stroke-width="2"/><text x="${x}" y="${ys[i]-10}" text-anchor="middle" font-size="10" font-weight="700" font-family="DM Mono,monospace" fill="${scoreColor(scores[i])}">${scores[i]}</text><text x="${x}" y="${H+8}" text-anchor="middle" font-size="9" font-family="DM Sans,sans-serif" fill="#475569">${sorted[i].date.slice(5)}</text>`).join('');
+  const avgDeep=Math.round(logs.reduce((a,l)=>a+(l.deepPct||0),0)/logs.length);
+  const avgRem=Math.round(logs.reduce((a,l)=>a+(l.remPct||0),0)/logs.length);
+  const avgScore=Math.round(scores.reduce((a,s)=>a+s,0)/scores.length);
+  const avgLight=Math.round(logs.reduce((a,l)=>a+(l.lightPct||0),0)/logs.length);
+  return`<div class="section-label">Score Trend</div>
+  <div class="card"><svg class="trend-svg" viewBox="0 0 ${W} ${H+14}"><defs><linearGradient id="tg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#818cf8" stop-opacity="0.3"/><stop offset="100%" stop-color="#818cf8" stop-opacity="0"/></linearGradient></defs><path d="${area}" fill="url(#tg)"/><path d="${path}" fill="none" stroke="#818cf8" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>${pts}</svg></div>
+  <div class="section-label">Averages</div>
+  <div class="card"><div class="vitals-grid">
+    <div class="vital-cell"><div class="vital-val" style="color:#818cf8">${avgScore}</div><div class="vital-lbl">Avg Score</div></div>
+    <div class="vital-cell"><div class="vital-val" style="color:#4361ee">${avgDeep}%</div><div class="vital-lbl">Avg Deep</div></div>
+    <div class="vital-cell"><div class="vital-val" style="color:#a5b4fc">${avgRem}%</div><div class="vital-lbl">Avg REM</div></div>
+    <div class="vital-cell"><div class="vital-val" style="color:#818cf8">${avgLight}%</div><div class="vital-lbl">Avg Light</div></div>
+  </div></div>`;
+}
+
+function renderDetail(id){
+  const log=logs.find(l=>l.id===id);
+  if(!log)return'';
+  const score=calcScore(log);
+  const{durScore,deepScore,remScore,effScore,rhrScore}=calcBreakdown(log);
+  return`<div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px 4px"><span class="section-label" style="padding:0">${log.date}</span><button class="back-btn" onclick="showView('history')">← Back</button></div>
+  <div class="card"><div class="score-row"><div>${ring(score)}</div><div class="breakdown">${bar('Duration',durScore,100,'#818cf8')}${bar('Deep Sleep',deepScore,100,'#4ade80')}${bar('REM',remScore,100,'#38bdf8')}${bar('Efficiency',effScore,100,'#fb923c')}${bar('Heart Rate',rhrScore,100,'#f472b6')}</div></div></div>
+  <div class="card"><div class="detail-grid">
+    <div class="detail-cell"><div class="detail-label">Total Sleep</div><div class="detail-val">${fmtMins(log.totalSleep)}</div></div>
+    <div class="detail-cell"><div class="detail-label">Bedtime</div><div class="detail-val">${log.bedtime}→${log.waketime}</div></div>
+    <div class="detail-cell"><div class="detail-label">Deep</div><div class="detail-val">${fmtMins(log.deep)} (${log.deepPct}%)</div></div>
+    <div class="detail-cell"><div class="detail-label">Light</div><div class="detail-val">${fmtMins(log.light)} (${log.lightPct}%)</div></div>
+    <div class="detail-cell"><div class="detail-label">REM</div><div class="detail-val">${fmtMins(log.rem)} (${log.remPct}%)</div></div>
+    <div class="detail-cell"><div class="detail-label">Wake</div><div class="detail-val">${fmtMins(log.wake)} (${log.wakePct}%)</div></div>
+    <div class="detail-cell"><div class="detail-label">RHR</div><div class="detail-val">${log.rhr?log.rhr+' bpm':'—'}</div></div>
+    <div class="detail-cell"><div class="detail-label">Avg HR</div><div class="detail-val">${log.avgHr?log.avgHr+' bpm':'—'}</div></div>
+    <div class="detail-cell"><div class="detail-label">SpO2</div><div class="detail-val">${log.spo2?log.spo2+'%':'—'}</div></div>
+    <div class="detail-cell"><div class="detail-label">Stress</div><div class="detail-val">${log.stress||'—'}</div></div>
+  </div></div>
+  ${log.notes?`<div class="card notes-card"><div class="section-label" style="padding:0 0 4px">Notes</div><div class="notes-text">${log.notes}</div></div>`:''}
+  <div style="padding:0 14px"><button class="btn btn-danger" onclick="deleteLog('${log.id}')">Delete This Entry</button></div>`;
+}
+
+function renderAdd(){
+  const today=new Date().toISOString().slice(0,10);
+  return`<div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px 4px"><span class="section-label" style="padding:0">Log New Night</span><button class="back-btn" onclick="showView('dashboard')">✕ Cancel</button></div>
+  <div class="form-wrap"><div class="card">
+    <div class="field"><label>Date</label><input type="date" id="f-date" value="${today}"></div>
+    <div class="two-col"><div class="field"><label>Bedtime</label><input type="time" id="f-bedtime"></div><div class="field"><label>Wake Time</label><input type="time" id="f-waketime"></div></div>
+    <div class="field"><label>Total Sleep (minutes)</label><input type="number" id="f-total" placeholder="e.g. 471"></div>
+    <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin:14px 0 8px">Sleep Stages</div>
+    <div class="four-col">
+      <div class="field"><label>Deep (min)</label><input type="number" id="f-deep" placeholder="102"></div>
+      <div class="field"><label>Deep %</label><input type="number" id="f-deepPct" placeholder="30"></div>
+      <div class="field"><label>Light (min)</label><input type="number" id="f-light" placeholder="216"></div>
+      <div class="field"><label>Light %</label><input type="number" id="f-lightPct" placeholder="62"></div>
+      <div class="field"><label>REM (min)</label><input type="number" id="f-rem" placeholder="26"></div>
+      <div class="field"><label>REM %</label><input type="number" id="f-remPct" placeholder="8"></div>
+      <div class="field"><label>Wake (min)</label><input type="number" id="f-wake" placeholder="1"></div>
+      <div class="field"><label>Wake %</label><input type="number" id="f-wakePct" placeholder="0"></div>
+    </div>
+    <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin:14px 0 8px">Vitals</div>
+    <div class="four-col">
+      <div class="field"><label>RHR (bpm)</label><input type="number" id="f-rhr" placeholder="53"></div>
+      <div class="field"><label>Avg HR</label><input type="number" id="f-avgHr" placeholder="56"></div>
+      <div class="field"><label>SpO2 %</label><input type="number" id="f-spo2" placeholder="97"></div>
+      <div class="field"><label>Stress</label><input type="number" id="f-stress" placeholder="26"></div>
+    </div>
+    <div class="field"><label>Notes (optional)</label><input type="text" id="f-notes" placeholder="e.g. Ramadan, hard training day..."></div>
+    <button class="btn btn-primary" onclick="saveLog()">Save Night</button>
+  </div></div>`;
+}
+
+function showView(view){
+  const main=document.getElementById('main');
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  const navEl=document.getElementById('nav-'+view);
+  if(navEl)navEl.classList.add('active');
+  if(view==='dashboard')main.innerHTML=renderDashboard();
+  else if(view==='history')main.innerHTML=renderHistory();
+  else if(view==='trend')main.innerHTML=renderTrend();
+  else if(view==='add')main.innerHTML=renderAdd();
+  main.scrollTop=0;
+}
+
+function showDetail(id){
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('nav-history').classList.add('active');
+  const main=document.getElementById('main');
+  main.innerHTML=renderDetail(id);
+  main.scrollTop=0;
+}
+
+function saveLog(){
+  const g=id=>{const el=document.getElementById(id);return el?el.value:'';};
+  const n=id=>{const v=g(id);return v?Number(v):null;};
+  const log={id:Date.now().toString(),date:g('f-date'),bedtime:g('f-bedtime'),waketime:g('f-waketime'),totalSleep:n('f-total')||0,deep:n('f-deep')||0,deepPct:n('f-deepPct')||0,light:n('f-light')||0,lightPct:n('f-lightPct')||0,rem:n('f-rem')||0,remPct:n('f-remPct')||0,wake:n('f-wake')||0,wakePct:n('f-wakePct')||0,rhr:n('f-rhr'),avgHr:n('f-avgHr'),spo2:n('f-spo2'),stress:n('f-stress'),notes:g('f-notes')};
+  if(!log.date||!log.totalSleep){alert('Please fill in at least Date and Total Sleep');return;}
+  logs=[...logs,log].sort((a,b)=>b.date.localeCompare(a.date));
+  saveLogs(logs);
+  saveToSupabase(log);
+  const toast=document.getElementById('toast');
+  toast.classList.add('show');
+  setTimeout(()=>{toast.classList.remove('show');loadFromSupabase().then(() => showView('dashboard'));},1200);
+}
+
+function deleteLog(id){
+  if(!confirm('Delete this sleep entry?'))return;
+  logs=logs.filter(l=>l.id!==id);
+  saveLogs(logs);
+  deleteFromSupabase(id);
+  showView('history');
+}
+
+loadFromSupabase().then(() => showView('dashboard'));
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+// IRON LOG — Supabase sync layer for sleep tracker
+const _supa = supabase.createClient(
+  'https://eubasgfirmupygxzhjeo.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV1YmFzZ2Zpcm11cHlneHpoamVvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5NjcxOTQsImV4cCI6MjA5NDU0MzE5NH0.9Zpf6uCfTsygVFmHZepTHpdb9GPa6-GWSgIJHd_E52w'
+);
+
+// Load from Supabase on start, fallback to localStorage
+async function loadFromSupabase() {
+  try {
+    const {data, error} = await _supa.from('sleep_logs').select('*').order('date', {ascending: false});
+    if (!error && data && data.length > 0) {
+      // Map supabase columns to local format
+      const mapped = data.map(r => ({
+        id: r.id, date: r.date, bedtime: r.bedtime, waketime: r.waketime,
+        totalSleep: r.total_sleep, deep: r.deep, deepPct: r.deep_pct,
+        light: r.light, lightPct: r.light_pct, rem: r.rem, remPct: r.rem_pct,
+        wake: r.wake, wakePct: r.wake_pct, rhr: r.rhr, avgHr: r.avg_hr,
+        spo2: r.spo2, stress: r.stress, notes: r.notes
+      }));
+      logs = mapped;
+      saveLogs(logs); // also keep localStorage in sync
+    }
+  } catch(e) { console.warn('Supabase sleep load failed, using localStorage', e); }
+}
+
+// Save to Supabase when logging
+async function saveToSupabase(log) {
+  try {
+    await _supa.from('sleep_logs').upsert({
+      id: log.id, date: log.date, bedtime: log.bedtime, waketime: log.waketime,
+      total_sleep: log.totalSleep, deep: log.deep, deep_pct: log.deepPct,
+      light: log.light, light_pct: log.lightPct, rem: log.rem, rem_pct: log.remPct,
+      wake: log.wake, wake_pct: log.wakePct, rhr: log.rhr, avg_hr: log.avgHr,
+      spo2: log.spo2, stress: log.stress, notes: log.notes
+    }, {onConflict: 'id'});
+  } catch(e) { console.warn('Supabase sleep save failed', e); }
+}
+
+async function deleteFromSupabase(id) {
+  try { await _supa.from('sleep_logs').delete().eq('id', id); }
+  catch(e) { console.warn('Supabase sleep delete failed', e); }
+}
+</script>
+</body>
+</html>
