@@ -310,7 +310,7 @@ function renderWorkout(){
   const upC=allEx.map(e=>getSignal(day.key,e.n,e,workoutInputs[ik(e.n)],phase).type).filter(t=>t==='up').length;
   const dc=['var(--blue)','var(--accent)','var(--red)','var(--green)'];
   const waveDots=[1,2,3,4].map(i=>{const a=i===phase.weekInCycle;const c=dc[i-1];return'<div class="wave-dot" style="background:'+(i<=phase.weekInCycle?c:'var(--border)')+(a?';box-shadow:0 0 0 2px var(--bg2),0 0 0 3px '+c:'')+'"></div>';}).join('');
-  const tabs=DAYS.map((d,i)=>{const done=completedDays.has(d.key);return'<button class="day-tab '+(i===currentWorkoutDay?'active':'')+' '+(done?'completed':'')+'" onclick="switchWorkoutDay('+i+'">'+d.label+(done?' ✓':'')+'</button>';}).join('');
+  const tabs=DAYS.map((d,i)=>{const done=completedDays.has(d.key);return'<button class="day-tab '+(i===currentWorkoutDay?'active':'')+' '+(done?'completed':'')+'" onclick="switchWorkoutDay('+i+')">'+d.label+(done?' ✓':'')+'</button>';}).join('');
   let exHTML='';
   day.sections.forEach(sec=>{
     exHTML+='<div class="section-block"><div class="section-label">'+sec.title+'</div>';
