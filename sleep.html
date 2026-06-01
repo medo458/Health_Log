@@ -312,13 +312,14 @@ async function loadFromSupabase() {
 // Save to Supabase when logging
 async function saveToSupabase(log) {
   try {
-    await _supa.from('sleep_logs').upsert({
+    const {error} = await _supa.from('sleep_logs').upsert({
       id: log.id, date: log.date, bedtime: log.bedtime, waketime: log.waketime,
       total_sleep: log.totalSleep, deep: log.deep, deep_pct: log.deepPct,
       light: log.light, light_pct: log.lightPct, rem: log.rem, rem_pct: log.remPct,
       wake: log.wake, wake_pct: log.wakePct, rhr: log.rhr, avg_hr: log.avgHr,
       spo2: log.spo2, stress: log.stress, notes: log.notes
-    }, {onConflict: 'id'});
+    }, {onConflict: 'date'});
+    if(error) console.error('Sleep save error:', error);
   } catch(e) { console.warn('Supabase sleep save failed', e); }
 }
 

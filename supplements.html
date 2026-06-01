@@ -1079,11 +1079,19 @@ main {
   }
   // ── end Supabase sync ─────────────────────────────────────
 
-  // Patch setItems and setTaken to also sync to Supabase
-  const _origSetItems = setItems;
-  function setItems(items) { _origSetItems(items); syncStackToSupabase(items); }
-  const _origSetTaken = setTaken;
-  function setTaken(map) { _origSetTaken(map); syncTakenToSupabase(map); }
+  // Intercept localStorage.setItem to trigger Supabase sync
+  const _origLSSet = localStorage.setItem.bind(localStorage);
+  localStorage.setItem = function(k, v) {
+    _origLSSet(k, v);
+    try {
+      if (k === 'stack:items') {
+        syncStackToSupabase(JSON.parse(v));
+      }
+      if (k && k.startsWith('stack:taken:') && !k.includes('profile')) {
+        syncTakenToSupabase(JSON.parse(v));
+      }
+    } catch(e) {}
+  };
 
   loadSuppFromSupabase().then(() => { render(); startTicker(); }).catch(() => { render(); startTicker(); });
 })();
