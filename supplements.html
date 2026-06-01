@@ -451,6 +451,7 @@ main {
 ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.08); border-radius: 999px; }
 ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.15); }
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
@@ -1011,8 +1012,80 @@ main {
     render();
   }, 60 * 1000);
 
-  render();
-  startTicker();
+
+  // ── Supabase sync ─────────────────────────────────────────
+  const _SUPA_URL = 'https://eubasgfirmupygxzhjeo.supabase.co';
+  const _SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV1YmFzZ2Zpcm11cHlneHpoamVvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5NjcxOTQsImV4cCI6MjA5NDU0MzE5NH0.9Zpf6uCfTsygVFmHZepTHpdb9GPa6-GWSgIJHd_E52w';
+  const _supa = supabase.createClient(_SUPA_URL, _SUPA_KEY);
+
+  // Sync supplement stack to Supabase
+  async function syncStackToSupabase(items) {
+    try {
+      if (!items || items.length === 0) return;
+      // Upsert all items
+      await _supa.from('supplement_stack').upsert(
+        items.map((item, i) => ({
+          id: item.id,
+          name: item.name,
+          dose: item.dose || '',
+          timing: item.timing || item.window || 'morning',
+          note: item.note || '',
+          low_stock: (getLow()||[]).includes(item.id),
+          sort_order: i
+        })),
+        { onConflict: 'id' }
+      );
+    } catch(e) { console.warn('Supabase stack sync failed:', e); }
+  }
+
+  // Sync today's taken status
+  async function syncTakenToSupabase(taken) {
+    try {
+      const date = getActiveDate();
+      const ids = Object.keys(taken).filter(id => taken[id]);
+      if (ids.length === 0) return;
+      await _supa.from('supplement_taken').upsert(
+        ids.map(id => ({ date, item_id: id })),
+        { onConflict: 'date,item_id' }
+      );
+    } catch(e) { console.warn('Supabase taken sync failed:', e); }
+  }
+
+  // Load from Supabase on boot
+  async function loadSuppFromSupabase() {
+    try {
+      const date = getActiveDate();
+      const [stackRes, takenRes] = await Promise.all([
+        _supa.from('supplement_stack').select('*').order('sort_order'),
+        _supa.from('supplement_taken').select('item_id').eq('date', date)
+      ]);
+      if (!stackRes.error && stackRes.data && stackRes.data.length > 0) {
+        const items = stackRes.data.map(r => ({
+          id: r.id, name: r.name, dose: r.dose,
+          timing: r.timing, window: r.timing,
+          note: r.note || ''
+        }));
+        storeSet('stack:items', items);
+        storeSet('stack:version', TEMPLATE_VERSION);
+        const lowIds = stackRes.data.filter(r => r.low_stock).map(r => r.id);
+        storeSet('stack:low', lowIds);
+      }
+      if (!takenRes.error && takenRes.data && takenRes.data.length > 0) {
+        const takenMap = {};
+        takenRes.data.forEach(r => { takenMap[r.item_id] = Date.now(); });
+        storeSet(todayKey, takenMap);
+      }
+    } catch(e) { console.warn('Supabase supp load failed:', e); }
+  }
+  // ── end Supabase sync ─────────────────────────────────────
+
+  // Patch setItems and setTaken to also sync to Supabase
+  const _origSetItems = setItems;
+  function setItems(items) { _origSetItems(items); syncStackToSupabase(items); }
+  const _origSetTaken = setTaken;
+  function setTaken(map) { _origSetTaken(map); syncTakenToSupabase(map); }
+
+  loadSuppFromSupabase().then(() => { render(); startTicker(); }).catch(() => { render(); startTicker(); });
 })();
 </script>
 

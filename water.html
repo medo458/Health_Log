@@ -720,7 +720,10 @@ html, body {
     try {
       const today = todayKey();
       const count = state.logs[today] || 0;
-      const target = Math.round(computeTargetMl() / unitVolMl());
+      // computeTargetMl and unitVolMl defined later in same scope — safe to call here
+      const targetMl = typeof computeTargetMl === 'function' ? computeTargetMl() : 2500;
+      const volMl = typeof unitVolMl === 'function' ? unitVolMl() : 500;
+      const target = Math.round(targetMl / volMl);
       await _supa.from('water_logs').upsert(
         { date: today, count: count, target: target },
         { onConflict: 'date' }
